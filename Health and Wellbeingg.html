@@ -1,0 +1,330 @@
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FitBuddy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#071028;--accent-1:#ff6b6b;--accent-2:#ffd166;--muted:#cbd5e1}
+    *{box-sizing:border-box}
+    body{font-family:Poppins,system-ui,-apple-system,Segoe UI,Roboto; margin:0; background:linear-gradient(180deg,var(--bg),#031226); color:var(--muted);}
+    .container{max-width:1100px;margin:28px auto;padding:20px;display:grid;grid-template-columns:360px 1fr;gap:20px}
+    .card{background:rgba(255,255,255,0.03);padding:18px;border-radius:14px;border:1px solid rgba(255,255,255,0.03)}
+    h1{margin:0 0 8px 0;color:white}
+    label{font-size:13px;display:block;margin:8px 0}
+    input,select,button{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:white}
+    .small{font-size:13px;color:#9fb0c6}
+    .streak{display:flex;align-items:center;gap:12px}
+    .streak .count{font-size:32px;font-weight:800;color:var(--accent-2)}
+    .affirmation{background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:#08101a;padding:12px;border-radius:12px;font-weight:700}
+    .progress-map{display:flex;gap:8px;align-items:end;height:120px;margin-top:12px}
+    .day{flex:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:6px 4px}
+    .day .bar{width:100%;border-radius:6px;background:rgba(255,255,255,0.04);height:12px}
+    .day .label{font-size:12px;margin-top:8px}
+    .controls{display:flex;gap:8px;margin-top:12px}
+    .token{display:inline-block;padding:6px 8px;border-radius:999px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04)}
+    canvas{width:100%;max-width:100%;height:220px;margin-top:12px;border-radius:10px;background:rgba(255,255,255,0.02)}
+    .row{display:flex;gap:8px}
+    @media (max-width:900px){.container{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>FitBuddy — Daily Focus</h1>
+      <div class="small">Single main goal mode (prototype). Use the left panel to save a goal and then check in daily.</div>
+
+      <h2 style="margin-top:14px;color:var(--accent-2)">Set Main Goal</h2>
+      <label>Goal title<input id="goalTitle" type="text" placeholder="Example: Build strength" /></label>
+      <label>Weekly target (sessions)<input id="weeklyTarget" type="number" min="1" max="14" value="3" /></label>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="saveGoal" class="primary">Save Goal</button>
+        <button id="clearGoal" class="ghost">Clear</button>
+      </div>
+
+      <h2 style="margin-top:14px;color:var(--accent-2)">Streak & Tokens</h2>
+      <div class="streak">
+        <div>
+          <div class="count" id="streakCount">0</div>
+          <div class="small">Current streak (days)</div>
+        </div>
+        <div style="flex:1">
+          <div class="small">Streak savers left: <span id="tokenCount">1</span></div>
+          <div class="small">Last check-in: <span id="lastCheck">Never</span></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="checkInBtn" class="primary">Check in today</button>
+        <button id="useToken" class="ghost">Use Streak Saver</button>
+      </div>
+
+      <h2 style="margin-top:14px;color:var(--accent-2)">Affirmation</h2>
+      <div id="affirmationBox" class="affirmation">You’re doing great — small steps win.</div>
+      <div class="small" style="margin-top:8px">Motivational style: <select id="motivationStyle"><option value="cheer">Cheer Buddy</option><option value="calm">Calm Mentor</option><option value="tough">Tough Coach</option></select></div>
+
+      <h2 style="margin-top:14px;color:var(--accent-2)">Weekly Progress Map</h2>
+      <div class="small">Green = showed up, blue = rest/planned, faded = missed</div>
+      <div class="progress-map" id="progressMap"></div>
+      <div class="small" style="margin-top:8px">Tip: Check in any small activity — even a 5-minute walk counts.</div>
+    </div>
+
+    <div class="card">
+      <h2 style="color:var(--accent-2)">Progress Chart</h2>
+      <canvas id="progressChart"></canvas>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+        <div>
+          <div class="small">This week's completion</div>
+          <div style="font-weight:700;font-size:18px" id="weekCompletion">0 / 0</div>
+        </div>
+        <div>
+          <div class="small">Weekly Victory</div>
+          <div id="weeklyVictory" style="font-weight:700;color:var(--accent-2)">—</div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:18px;color:var(--accent-2)">Weekly Victory Story</h2>
+      <div id="victoryStory" class="small">No data yet. Save a goal and check in to create your weekly story.</div>
+
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button id="shareBtn" class="ghost">Generate Share Image</button>
+        <button id="exportData" class="ghost">Export Data (JSON)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple prototype storage keys
+    const STORAGE_KEY = 'fitbuddy_prototype_v1';
+
+    // DOM
+    const goalTitleEl = document.getElementById('goalTitle');
+    const weeklyTargetEl = document.getElementById('weeklyTarget');
+    const saveGoalBtn = document.getElementById('saveGoal');
+    const clearGoalBtn = document.getElementById('clearGoal');
+    const checkInBtn = document.getElementById('checkInBtn');
+    const useTokenBtn = document.getElementById('useToken');
+    const streakCountEl = document.getElementById('streakCount');
+    const tokenCountEl = document.getElementById('tokenCount');
+    const lastCheckEl = document.getElementById('lastCheck');
+    const affirmationBox = document.getElementById('affirmationBox');
+    const motivationStyle = document.getElementById('motivationStyle');
+    const progressMapEl = document.getElementById('progressMap');
+    const weekCompletionEl = document.getElementById('weekCompletion');
+    const weeklyVictoryEl = document.getElementById('weeklyVictory');
+    const victoryStoryEl = document.getElementById('victoryStory');
+    const progressCanvas = document.getElementById('progressChart');
+
+    // default model
+    const defaultState = {
+      goal: null,
+      weeklyTarget: 3,
+      // history keyed by ISO date (YYYY-MM-DD): { checked:true/false, note, type:'workout'|'rest' }
+      history: {},
+      streak: 0,
+      lastCheck: null,
+      tokens: 1, // streak savers
+      motivation: 'cheer'
+    };
+
+    // load/save
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(!raw) return {...defaultState};
+        const parsed = JSON.parse(raw);
+        return Object.assign({...defaultState}, parsed);
+      }catch(e){return {...defaultState};}
+    }
+    function saveState(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }
+
+    let state = loadState();
+
+    // helpers
+    function todayIso(){ const d=new Date(); return d.toISOString().slice(0,10); }
+    function isoToDayName(iso){ const d=new Date(iso); return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]; }
+
+    // UI render
+    function render(){
+      if(state.goal){ goalTitleEl.value = state.goal; weeklyTargetEl.value = state.weeklyTarget; } else { goalTitleEl.value=''; }
+      streakCountEl.textContent = state.streak;
+      tokenCountEl.textContent = state.tokens;
+      lastCheckEl.textContent = state.lastCheck || 'Never';
+      motivationStyle.value = state.motivation;
+
+      // Affirmation rotate based on style and streak
+      affirmationBox.textContent = getAffirmation();
+
+      // render weekly progress map (current week Mon-Sun)
+      renderProgressMap();
+
+      const weekData = getThisWeekData();
+      weekCompletionEl.textContent = `${weekData.count} / ${state.weeklyTarget}`;
+      weeklyVictoryEl.textContent = weekVictoryText(weekData);
+      victoryStoryEl.textContent = generateVictoryStory(weekData);
+
+      drawChart(weekData);
+    }
+
+    function getAffirmation(){
+      const style = state.motivation;
+      if(style === 'cheer'){
+        if(state.streak >= 7) return "You're unstoppable — keep the streak alive!";
+        if(state.streak >= 3) return "Nice rhythm — consistency is your superpower.";
+        return "Small steps win. One check-in at a time.";
+      }
+      if(style === 'calm'){
+        if(state.streak >= 7) return "You are building a gentle, lasting habit.";
+        if(state.streak >= 3) return "Steady progress. Breathe and keep going.";
+        return "You're allowed to be kind to yourself today.";
+      }
+      // tough
+      if(state.streak >= 7) return "Amazing. Don’t slow down now.";
+      if(state.streak >= 3) return "Good work. Push one more day.";
+      return "Start. Finish. Repeat. No excuses.";
+    }
+
+    // progress map = 7 days current week starting Monday
+    function getWeekIsoDates(){
+      const now = new Date();
+      const day = now.getDay();
+      const diffToMon = (day + 6) % 7; // 0 for Mon
+      const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMon);
+      const arr = [];
+      for(let i=0;i<7;i++){ const d=new Date(mon.getFullYear(),mon.getMonth(),mon.getDate()+i); arr.push(d.toISOString().slice(0,10)); }
+      return arr;
+    }
+
+    function getThisWeekData(){
+      const days = getWeekIsoDates();
+      let count = 0; const items = [];
+      days.forEach(iso=>{
+        const h = state.history[iso];
+        const shown = h && h.checked;
+        if(shown) count++;
+        items.push({iso, shown, planned: (h && h.type==='rest') ? true : false});
+      });
+      return {days:items, count};
+    }
+
+    function renderProgressMap(){
+      progressMapEl.innerHTML = '';
+      const week = getThisWeekData();
+      week.days.forEach(d=>{
+        const el = document.createElement('div'); el.className='day';
+        const bar = document.createElement('div'); bar.className='bar';
+        if(d.shown){ bar.style.height = '70px'; bar.style.background = 'linear-gradient(180deg,var(--accent-2),var(--accent-1))'; }
+        else if(d.planned){ bar.style.height = '50px'; bar.style.background = 'linear-gradient(180deg,rgba(100,180,255,0.4),rgba(100,180,255,0.2))'; }
+        else { bar.style.height = '20px'; bar.style.background = 'rgba(255,255,255,0.04)'; }
+        el.appendChild(bar);
+        const label = document.createElement('div'); label.className='label'; label.textContent = isoToDayName(d.iso);
+        el.appendChild(label);
+        // allow clicking to mark/unmark days (for prototype)
+        el.addEventListener('click', ()=>{ toggleDay(d.iso); });
+        progressMapEl.appendChild(el);
+      });
+    }
+
+    function toggleDay(iso){
+      // toggle as a check-in
+      const existing = state.history[iso] || {};
+      const newVal = !existing.checked;
+      state.history[iso] = Object.assign({}, existing, {checked:newVal, type:newVal ? 'workout' : null});
+      // update streak intelligently only if today was toggled on
+      if(iso === todayIso() && newVal){ doCheckIn(); }
+      saveState(state); render();
+    }
+
+    // Streak logic: consecutive days ending today
+    function recalcStreak(){
+      let s=0; const hist = state.history; let d=new Date();
+      for(;;){ const iso=d.toISOString().slice(0,10); if(hist[iso] && hist[iso].checked) s++; else break; d.setDate(d.getDate()-1); }
+      state.streak = s; state.lastCheck = getLastCheckDate();
+    }
+
+    function getLastCheckDate(){ const keys = Object.keys(state.history).filter(k=>state.history[k].checked); if(!keys.length) return null; keys.sort(); return keys[keys.length-1]; }
+
+    function doCheckIn(){
+      const iso = todayIso();
+      state.history[iso] = Object.assign({}, state.history[iso] || {}, {checked:true, type:'workout'});
+      recalcStreak(); saveState(state); appendToast('Checked in for today — nice!'); render();
+    }
+
+    // Use token to pretend previous day was checked (saves streak)
+    function useToken(){ if(state.tokens<=0){ appendToast('No tokens left'); return; }
+      // find the most recent missed day (yesterday)
+      const y = new Date(); y.setDate(y.getDate()-1); const iso = y.toISOString().slice(0,10);
+      state.history[iso] = Object.assign({}, state.history[iso] || {}, {checked:true, type:'token'});
+      state.tokens -= 1; recalcStreak(); saveState(state); appendToast('Used a Streak Saver for yesterday'); render(); }
+
+    // Save / clear goal
+    saveGoalBtn.addEventListener('click', ()=>{
+      const title = goalTitleEl.value.trim(); const wt = parseInt(weeklyTargetEl.value,10) || 3;
+      if(!title){ appendToast('Please enter a goal title'); return; }
+      state.goal = title; state.weeklyTarget = wt; saveState(state); appendToast('Goal saved'); render();
+    });
+    clearGoalBtn.addEventListener('click', ()=>{ if(confirm('Clear goal and history?')){ state = {...defaultState}; saveState(state); render(); } });
+
+    checkInBtn.addEventListener('click', ()=>{ doCheckIn(); recalcStreak(); saveState(state); render(); });
+    useTokenBtn.addEventListener('click', ()=>{ useToken(); });
+
+    motivationStyle.addEventListener('change', ()=>{ state.motivation = motivationStyle.value; saveState(state); render(); });
+
+    // small UI helpers
+    function appendToast(msg){ console.log('TOAST:',msg); }
+
+    // generate weekly victory message
+    function weekVictoryText(weekData){ const pct = (weekData.count / (state.weeklyTarget||1))*100; if(pct>=100) return 'Goal met — huge win!'; if(pct>=66) return 'Almost there — great effort'; if(pct>0) return 'You showed up — keep going'; return 'No check-ins yet'; }
+    function generateVictoryStory(weekData){ if(!state.goal) return 'No main goal set.'; const lines = []; lines.push(`Goal: ${state.goal}`); lines.push(`Completed ${weekData.count} of ${state.weeklyTarget} sessions this week.`); if(state.streak>0) lines.push(`Current streak: ${state.streak} days.`); if(weekData.count>=state.weeklyTarget) lines.push('This week you hit your target — celebrate!'); return lines.join(' '); }
+
+    // small chart draw (bar representation of last 14 days)
+    function drawChart(weekData){ const ctx = progressCanvas.getContext('2d'); const days = Object.keys(state.history).slice(-14); // last 14 entries by key order
+      // if not enough, build last14 iso dates
+      const arr = [];
+      const today = new Date(); for(let i=13;i>=0;i--){ const d=new Date(today.getFullYear(),today.getMonth(),today.getDate()-i); arr.push(d.toISOString().slice(0,10)); }
+      // clear
+      const w = progressCanvas.width = progressCanvas.clientWidth * devicePixelRatio;
+      const h = progressCanvas.height = progressCanvas.clientHeight * devicePixelRatio;
+      ctx.clearRect(0,0,w,h);
+      // draw baseline grid
+      const barW = Math.floor(w / arr.length) - 8;
+      arr.forEach((iso, idx)=>{
+        const x = idx * (barW + 8) + 10;
+        const checked = state.history[iso] && state.history[iso].checked;
+        const heightPct = checked ? 0.9 : 0.12;
+        const barH = Math.max(4, Math.floor(h * heightPct));
+        // color
+        ctx.fillStyle = checked ? '#ffd166' : 'rgba(255,255,255,0.06)';
+        ctx.fillRect(x, h - barH - 20, barW, barH);
+        // label
+        ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.font = `${12*devicePixelRatio}px Poppins`;
+        const dayLabel = iso.slice(5);
+        ctx.fillText(dayLabel, x, h - 4);
+      });
+    }
+
+    // export data
+    document.getElementById('exportData').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='fitbuddy-data.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    // share image (simple HTML to canvas snapshot - prototype)
+    document.getElementById('shareBtn').addEventListener('click', ()=>{
+      // create a simple image with goal and streak - prototype
+      const canvas = document.createElement('canvas'); canvas.width = 800; canvas.height = 420; const c = canvas.getContext('2d');
+      c.fillStyle = '#071028'; c.fillRect(0,0,canvas.width,canvas.height);
+      c.fillStyle = '#ffd166'; c.font = '28px Poppins'; c.fillText(state.goal || 'My FitBuddy Goal', 40, 80);
+      c.fillStyle = '#fff'; c.font = '20px Poppins'; c.fillText(`Streak: ${state.streak} days`, 40, 140);
+      c.fillText(`This week: ${getThisWeekData().count} / ${state.weeklyTarget}`, 40, 180);
+      const url = canvas.toDataURL('image/png'); const a=document.createElement('a'); a.href=url; a.download='fitbuddy-share.png'; a.click();
+    });
+
+    // initial render
+    recalcStreak(); render();
+
+    // safety: auto-save every 5s to avoid data loss during prototype testing
+    setInterval(()=>{ saveState(state); }, 5000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,630 @@
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FitBuddy — AI Fitness & Diet Assistant</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0f1724;
+      --card: #0f1724;
+      --glass: rgba(255,255,255,0.04);
+      --accent-1: #ff6b6b;
+      --accent-2: #ffd166;
+      --muted: #cbd5e1;
+      --glass-border: rgba(255,255,255,0.06);
+      --success: #66e07e;
+      --shadow: 0 8px 24px rgba(8,15,30,0.6);
+      --radius: 16px;
+      --glass-blur: 8px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%; font-family:"Poppins",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; margin:0; background:
+      radial-gradient(1000px 400px at 10% 10%, rgba(255,108,108,0.08), transparent),
+      radial-gradient(800px 300px at 90% 90%, rgba(255,209,102,0.06), transparent),
+      linear-gradient(180deg,var(--bg), #071028); color:var(--muted); -webkit-font-smoothing:antialiased}
+    .app {
+      max-width:1100px;
+      margin:28px auto;
+      padding:28px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:24px;
+      align-items:start;
+    }
+
+    /* LEFT PANE: onboarding / customization */
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border: 1px solid var(--glass-border);
+      padding:20px;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(var(--glass-blur));
+    }
+    h1{font-size:22px; margin:0 0 8px 0; color:white}
+    h2{font-size:16px; color:var(--accent-2); margin:12px 0}
+    label{display:block; font-size:13px; margin:8px 0; color:var(--muted)}
+    input[type="text"], input[type="number"], select, textarea{
+      width:100%; padding:10px 12px; margin-top:6px; border-radius:10px; border:1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.02); color: white; outline:none; font-size:14px;
+    }
+    .row {display:flex; gap:8px}
+    .row > * {flex:1}
+    button.primary{
+      background: linear-gradient(90deg,var(--accent-1),var(--accent-2));
+      border: none; color:#08101a; font-weight:700; padding:10px 14px; border-radius:12px; cursor:pointer;
+      box-shadow: 0 8px 24px rgba(255,107,107,0.12);
+    }
+    button.ghost{
+      background: transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted); padding:10px 12px; border-radius:10px; cursor:pointer;
+    }
+
+    /* Color pickers */
+    .palette {display:flex; gap:8px; align-items:center; margin-top:10px}
+    .palette input[type="color"]{width:46px; height:36px; border-radius:8px; border:0; padding:0; background:transparent; cursor:pointer}
+
+    /* Preview cards for summary */
+    .summary {
+      display:grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap:12px;
+      margin-top:12px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px; padding:12px; border:1px solid rgba(255,255,255,0.03);
+    }
+    .big {grid-column:1 / -1; display:flex; justify-content:space-between; align-items:center}
+
+    /* RIGHT PANE: chat + suggestions */
+    .assistant {
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .chat {
+      background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+      border-radius:16px; padding:18px; min-height:520px; border:1px solid rgba(255,255,255,0.03);
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .messages {flex:1; overflow:auto; padding-right:6px}
+    .msg {max-width:78%; padding:10px 12px; border-radius:12px; margin:8px 0; font-size:14px}
+    .msg.user {margin-left:auto; background:linear-gradient(90deg,var(--accent-2),rgba(255,209,102,0.08)); color:#08101a}
+    .msg.ai {background:rgba(255,255,255,0.02); color:var(--muted); border:1px solid rgba(255,255,255,0.02)}
+    .inputRow {display:flex; gap:8px; margin-top:8px}
+    .inputRow input{flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:white}
+    .small {font-size:12px; color: #9fb0c6}
+
+    /* chips */
+    .chips {display:flex; gap:6px; flex-wrap:wrap}
+    .chip {background: rgba(255,255,255,0.02); padding:8px 10px; border-radius:999px; font-size:13px; border:1px solid rgba(255,255,255,0.03); cursor:pointer}
+
+    /* playful animated accent */
+    .logo {
+      width:52px; height:52px; border-radius:12px; background: linear-gradient(135deg,var(--accent-1),var(--accent-2));
+      display:inline-flex; align-items:center; justify-content:center; color:#08101a; font-weight:900; font-size:20px;
+      box-shadow: 0 12px 40px rgba(255,149,117,0.12);
+    }
+    footer{margin-top:18px; color: #7ea7c9; font-size:13px; text-align:center}
+    @media (max-width:980px){
+      .app{grid-template-columns:1fr; padding:12px}
+      .assistant{order:2}
+    }
+	
+		  a.schedule-link {
+    color: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  a.schedule-link:hover {
+    text-decoration: underline;
+    opacity: 0.8;
+  }
+  
+  #qrcode {
+  margin: 20px auto;
+  padding: 10px;
+  background: #ffffff33;
+  border-radius: 10px;
+  width: fit-content;
+} 
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: Profile + Palette -->
+    <div class="panel" id="leftPanel">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="logo">FB</div>
+        <div>
+          <h1>FitBuddy</h1>
+          <div class="small">Energetic — personalized plans you can actually follow</div>
+        </div>
+      </div>
+
+      <h2>1 — Tell me about you</h2>
+      <form id="profileForm" autocomplete="off">
+        <div class="row">
+          <label>Age
+            <input type="number" id="age" min="10" max="120" required />
+          </label>
+          <label>Gender
+            <select id="gender" required>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="row">
+          <label>Height (cm)
+            <input type="number" step="0.1" id="height" placeholder="e.g. 175" required />
+          </label>
+          <label>Weight (kg)
+            <input type="number" step="0.1" id="weight" placeholder="e.g. 72.5" required />
+          </label>
+        </div>
+
+        <label>Activity level
+          <select id="activity">
+            <option value="1.2">Sedentary (desk)</option>
+            <option value="1.375">Lightly active (light exercise 1-3d)</option>
+            <option value="1.55" selected>Moderately active (3-5d)</option>
+            <option value="1.725">Very active (6-7d)</option>
+            <option value="1.9">Extremely active (manual job/athlete)</option>
+          </select>
+        </label>
+
+        <label>Goal
+          <select id="goal">
+            <option value="lose">Lose Weight</option>
+            <option value="gain">Build Muscle</option>
+            <option value="maintain" selected>Maintain</option>
+          </select>
+        </label>
+
+        <label>Diet Preference
+          <select id="diet">
+            <option value="any">No Restrictions</option>
+            <option value="vegetarian">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+            <option value="halal">Halal</option>
+            <option value="keto">Keto</option>
+          </select>
+        </label>
+
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button class="primary" type="submit">Save Profile & Continue</button>
+          <button class="ghost" type="button" id="clearProfile">Reset</button>
+        </div>
+      </form>
+
+      <h2>2 — Theme & Colors</h2>
+      <div class="palette">
+        <div>
+          <label class="small">Primary</label>
+          <input type="color" id="primaryColor" title="Primary accent color" value="#ff6b6b" />
+        </div>
+        <div>
+          <label class="small">Secondary</label>
+          <input type="color" id="secondaryColor" title="Secondary accent color" value="#ffd166" />
+        </div>
+        <div style="flex:1">
+          <label class="small">Background hint</label>
+          <input type="color" id="bgHint" title="Background tint" value="#071028" />
+        </div>
+      </div>
+
+      <h2>3 — Quick tips</h2>
+      <div class="chips">
+        <div class="chip" data-tip="short">Short daily workouts (20–30m)</div>
+        <div class="chip" data-tip="meal">Protein-forward meals</div>
+        <div class="chip" data-tip="sleep">7–9h sleep</div>
+        <div class="chip" data-tip="consistency">Progress > Perfection</div>
+      </div>
+
+      <div class="summary" id="summaryCards" style="margin-top:14px; display:none">
+        <div class="card" id="cardBmi">
+          <div class="small">BMI</div>
+          <div style="font-weight:700; font-size:20px" id="bmiVal">—</div>
+          <div class="small" id="bmiNote">—</div>
+        </div>
+        <div class="card" id="cardCalories">
+          <div class="small">Calories</div>
+          <div style="font-weight:700; font-size:20px" id="calVal">—</div>
+          <div class="small" id="calNote">—</div>
+        </div>
+        <div class="card big" id="cardMacros" style="display:none">
+          <div>
+            <div class="small">Suggested macros</div>
+            <div style="font-weight:700; font-size:16px" id="macroTxt">—</div>
+          </div>
+          <div style="text-align:right; min-width:140px;">
+            <div class="small">Goal</div>
+            <div style="font-weight:700; font-size:18px" id="goalTxt">—</div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        Built for action • Suggestions are rule-based and conservative — treat as starting point
+      </footer>
+    </div>
+
+    <div class="assistant">
+      <div class="panel chat" id="chatPanel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight:700; color:white">FitBuddy Assistant</div>
+            <div class="small">Your friendly scheduling & meal/workout planner</div>
+          </div>
+          <div>
+            <button class="ghost" id="showProfile">Edit Profile</button>
+          </div>
+        </div>
+
+        <div class="messages" id="messages" aria-live="polite">
+          <div class="msg ai">Hi! I can help schedule workouts and plan meals tailored to your profile. Start by saving your profile on the left.</div>
+        </div>
+
+        <div class="inputRow">
+          <input id="userMsg" type="text" placeholder="Ask for a 4-week plan, quick meals, a gym split... (e.g. 'Plan my week for muscle gain')" />
+          <button class="primary" id="sendMsg">Ask</button>
+        </div>
+
+        <div class="small">Examples: "4-week beginner program", "7 quick halal dinners", "30-minute home cardio schedule"</div>
+      </div>
+
+      <div class="panel" id="suggestions">
+        <h2>Onboarding Suggestions</h2>
+        <div class="small">After you save your profile, try these quick prompts:</div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px">
+          <button class="chip" data-preset="plan_gain">Create 4-week muscle-building plan</button>
+          <button class="chip" data-preset="meals_keto">7-day keto-friendly meals</button>
+          <button class="chip" data-preset="schedule_short">Daily 20-minute home workouts</button>
+        </div>
+        <div style="height:12px"></div>
+        <h2>More suggestions</h2>
+        <ul style="padding-left:18px; margin:8px 0 0 0; color:var(--muted)">
+          <li>Enable cloud sync later to save progress across devices</li>
+          <li>Use a wearable or weekly weigh-ins to refine calories</li>
+          <li>Add progress photos & measurements for better motivation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
+  <p>
+  <a class="schedule-link" href="Health and Wellbeingg.html">View Your Full Schedule →</a>
+</p>
+
+<h3>Scan to open FitBuddy Main Page:</h3>
+<div id="qrcode"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <script>
+    const profileForm = document.getElementById('profileForm');
+    const clearProfileBtn = document.getElementById('clearProfile');
+    const messages = document.getElementById('messages');
+    const sendMsgBtn = document.getElementById('sendMsg');
+    const userMsgInput = document.getElementById('userMsg');
+    const summaryCards = document.getElementById('summaryCards');
+    const cardBmi = document.getElementById('cardBmi');
+    const cardCalories = document.getElementById('cardCalories');
+    const cardMacros = document.getElementById('cardMacros');
+    const bmiVal = document.getElementById('bmiVal');
+    const bmiNote = document.getElementById('bmiNote');
+    const calVal = document.getElementById('calVal');
+    const calNote = document.getElementById('calNote');
+    const macroTxt = document.getElementById('macroTxt');
+    const goalTxt = document.getElementById('goalTxt');
+    const showProfileBtn = document.getElementById('showProfile');
+    const suggestions = document.getElementById('suggestions');
+
+    const primaryColorInput = document.getElementById('primaryColor');
+    const secondaryColorInput = document.getElementById('secondaryColor');
+    const bgHintInput = document.getElementById('bgHint');
+
+    // init colors from inputs (apply to CSS variables)
+    function applyColors(){
+      document.documentElement.style.setProperty('--accent-1', primaryColorInput.value);
+      document.documentElement.style.setProperty('--accent-2', secondaryColorInput.value);
+      document.documentElement.style.setProperty('--bg', bgHintInput.value);
+    }
+    primaryColorInput.addEventListener('input', applyColors);
+    secondaryColorInput.addEventListener('input', applyColors);
+    bgHintInput.addEventListener('input', applyColors);
+    applyColors();
+
+    function calculateAndSaveProfile(evt){
+      if(evt) evt.preventDefault();
+
+      // Collect
+      const age = parseInt(document.getElementById('age').value, 10);
+      const gender = document.getElementById('gender').value;
+      const height = parseFloat(document.getElementById('height').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const activity = parseFloat(document.getElementById('activity').value);
+      const goal = document.getElementById('goal').value;
+      const diet = document.getElementById('diet').value;
+
+      if(!age || !height || !weight){ alert('Please complete age, height and weight'); return; }
+
+      // BMI: weight (kg) / (height m)^2
+      // computed carefully:
+      const heightM = height / 100; // cm -> m
+      const bmiRaw = weight / (heightM * heightM);
+      const bmi = Math.round(bmiRaw * 10) / 10; // one decimal
+
+      // BMR: Mifflin-St Jeor (gender-aware)
+      // male: +5, female: -161
+      const genderAdd = (gender === 'male') ? 5 : -161;
+      // BMR = 10*wt + 6.25*ht - 5*age + genderAdd
+      const bmrRaw = 10 * weight + 6.25 * height - 5 * age + genderAdd;
+      const bmr = Math.round(bmrRaw);
+
+      // Maintenance calories = BMR * activity multiplier
+      const maintenanceCalories = Math.round(bmr * activity);
+
+      // Adjust by goal
+      let recommendedCalories = maintenanceCalories;
+      if(goal === 'lose') recommendedCalories = Math.round(maintenanceCalories - 400);
+      if(goal === 'gain') recommendedCalories = Math.round(maintenanceCalories + 300);
+
+      // Suggested macros (simple rule-of-thumb)
+      // Protein: 1.6-2.2 g/kg (we'll use 1.8 for balance for gain/maintenance)
+      // Fat: 20-30% calories, carbs fill remainder
+      const proteinPerKg = (goal === 'gain') ? 1.9 : 1.6;
+      const proteinG = Math.round(proteinPerKg * weight);
+      const proteinCal = proteinG * 4;
+
+      const fatPerc = 0.25;
+      const fatCal = Math.round(recommendedCalories * fatPerc);
+      const fatG = Math.round(fatCal / 9);
+
+      const carbCal = recommendedCalories - (proteinCal + fatCal);
+      const carbG = Math.max(0, Math.round(carbCal / 4));
+
+      // Store
+      const profile = {
+        age, gender, height, weight, activity, goal, diet,
+        bmi, bmr, maintenanceCalories, recommendedCalories,
+        macros: {proteinG, fatG, carbG}
+      };
+      localStorage.setItem('fitnessProfile', JSON.stringify(profile));
+
+      // Display summary cards
+      bmiVal.textContent = bmi;
+      bmiNote.textContent = (bmi < 18.5) ? 'Underweight' : (bmi < 25 ? 'Normal' : (bmi < 30 ? 'Overweight' : 'Obese'));
+      calVal.textContent = recommendedCalories + ' kcal/day';
+      calNote.textContent = `Maintenance: ${maintenanceCalories} kcal`;
+      macroTxt.textContent = `${proteinG}g P • ${fatG}g F • ${carbG}g C`;
+      goalTxt.textContent = goal.charAt(0).toUpperCase() + goal.slice(1);
+
+      summaryCards.style.display = 'grid';
+      cardMacros.style.display = 'flex';
+      // ensure chat active and inform user
+      appendAiMessage(`Profile saved! BMI ${bmi} (${bmiNote.textContent}). Target ~${recommendedCalories} kcal/day. Ask me for a 4-week plan or quick meals.`);
+      scrollMessages();
+
+      // show assistant's "starter" suggestions by simulating auto-prompt
+      localStorage.setItem('lastSavedAt', new Date().toISOString());
+    }
+
+    function loadProfileIfExists(){
+      const raw = localStorage.getItem('fitnessProfile');
+      if(!raw) return;
+      try{
+        const p = JSON.parse(raw);
+        document.getElementById('age').value = p.age || '';
+        document.getElementById('gender').value = p.gender || 'male';
+        document.getElementById('height').value = p.height || '';
+        document.getElementById('weight').value = p.weight || '';
+        document.getElementById('activity').value = p.activity || 1.55;
+        document.getElementById('goal').value = p.goal || 'maintain';
+        document.getElementById('diet').value = p.diet || 'any';
+
+        // show summary if available
+        if(p.bmi){
+          bmiVal.textContent = p.bmi;
+          bmiNote.textContent = (p.bmi < 18.5) ? 'Underweight' : (p.bmi < 25 ? 'Normal' : (p.bmi < 30 ? 'Overweight' : 'Obese'));
+          calVal.textContent = (p.recommendedCalories || p.maintenanceCalories) + ' kcal/day';
+          calNote.textContent = `Maintenance: ${p.maintenanceCalories || '—'}`;
+          macroTxt.textContent = p.macros ? `${p.macros.proteinG}g P • ${p.macros.fatG}g F • ${p.macros.carbG}g C` : '—';
+          goalTxt.textContent = (p.goal || '—');
+          summaryCards.style.display = 'grid';
+          cardMacros.style.display = 'flex';
+        }
+      } catch(e){}
+    }
+
+    profileForm.addEventListener('submit', calculateAndSaveProfile);
+
+    clearProfileBtn.addEventListener('click', ()=>{
+      localStorage.removeItem('fitnessProfile');
+      localStorage.removeItem('lastSavedAt');
+      location.reload();
+    });
+
+    showProfileBtn.addEventListener('click', ()=>{
+      // scroll left panel into view on small screens; highlight
+      document.getElementById('leftPanel').scrollIntoView({behavior:'smooth'});
+      appendAiMessage('You can edit your profile on the left. Save to update your recommendations.');
+      scrollMessages();
+    });
+
+    // Load existing on start
+    loadProfileIfExists();
+
+    /* ----------------------
+       Simple rule-based assistant engine (client-side)
+       ---------------------- */
+    function appendUserMessage(text){
+      const el = document.createElement('div');
+      el.className = 'msg user';
+      el.textContent = text;
+      messages.appendChild(el);
+    }
+    function appendAiMessage(text){
+      const el = document.createElement('div');
+      el.className = 'msg ai';
+      el.textContent = text;
+      messages.appendChild(el);
+    }
+    function scrollMessages(){ messages.scrollTop = messages.scrollHeight; }
+
+    // Basic "intent" parsing (very simple)
+    function handleAssistantQuery(query){
+      const rawProfile = localStorage.getItem('fitnessProfile');
+      if(!rawProfile){
+        appendAiMessage("I don't have your profile yet. Please save your profile first so I can personalize a plan.");
+        return;
+      }
+      const profile = JSON.parse(rawProfile);
+      const q = query.toLowerCase();
+
+      // Intent branches
+      if(q.includes('4-week') || q.includes('4 week') || q.includes('4 week plan') || q.includes('4 week program') || q.includes('month')){
+        // Create a short 4-week plan
+        const plan = generate4WeekPlan(profile);
+        appendAiMessage(plan);
+        return;
+      }
+
+      if(q.includes('meal') || q.includes('dinner') || q.includes('breakfast') || q.includes('lunch')){
+        const meals = generateMealSuggestions(profile, 3);
+        appendAiMessage(meals);
+        return;
+      }
+
+      if(q.includes('workout') || q.includes('home') || q.includes('gym') || q.includes('cardio') || q.includes('split')){
+        const workouts = generateWeeklyWorkout(profile);
+        appendAiMessage(workouts);
+        return;
+      }
+
+      // presets
+      if(q.includes('keto')){
+        appendAiMessage(generateMealSuggestions(profile, 7, 'keto'));
+        return;
+      }
+
+      // fallback: short summary + next-step prompts
+      appendAiMessage(`Quick summary: BMI ${profile.bmi} • Target ${profile.recommendedCalories} kcal/day. Try: "Create 4-week plan", "7 quick meals", or "30-min home workouts".`);
+    }
+
+    // Generate a short 4-week progressive plan (text)
+    function generate4WeekPlan(p){
+      const goal = p.goal;
+      const base = (goal==='gain') ? 'Progressive overload: focus on compound lifts, gradually increase weight or reps each week.' : (goal==='lose') ? 'Prioritize calorie deficit and maintain strength with resistance 2x/week.' : 'Balanced maintenance: keep variety and consistency.';
+      const weeks = [
+        "Week 1 — Adaptation: 3 full-body workouts (push/pull/legs style). 20–30 min cardio 2x.",
+        "Week 2 — Slight volume increase: 4 workouts (upper/lower split). Add an extra set to major lifts.",
+        "Week 3 — Intensity bump: 4 workouts with one heavier day. Include 1 HIIT session (15–20m).",
+        "Week 4 — Consolidation: keep intensity, record progress and take 1 active recovery day."
+      ];
+      return `4-Week Plan (${goal.toUpperCase()})\n\n${base}\n\n${weeks.join('\n')}\n\nNotes:\n• Training frequency: 3–5x/week depending on your available days.\n• Sleep and protein matter — aim for ~${Math.round(p.macros.proteinG)}g protein/day.\n• Adjust calories if weight change is too fast: aim for 0.5–1% bodyweight/week change for safety.`;
+    }
+
+    // Meal suggestions builder (n items)
+    function generateMealSuggestions(p, days=3, forceDiet=null){
+      const diet = forceDiet || p.diet || 'any';
+      const kcal = p.recommendedCalories;
+      const protein = p.macros ? p.macros.proteinG : Math.round(1.6 * p.weight);
+      // simple meal templates
+      const meals = {
+        any: [
+          "Grilled chicken + quinoa + roasted veg (high protein)",
+          "Omelette (3 eggs) with spinach + whole grain toast",
+          "Salmon bowl with brown rice and steamed broccoli",
+          "Greek yogurt + nuts + berries (snack/high-protein)",
+          "Lentil & veggie stew with side salad"
+        ],
+        vegetarian: [
+          "Tofu stir-fry with mixed veg & brown rice",
+          "Chickpea curry with spinach and basmati",
+          "Greek yogurt bowl with seeds and fruit"
+        ],
+        vegan: [
+          "Lentil & sweet potato curry",
+          "Chickpea salad with avocado & quinoa",
+          "Tofu scramble with veggies"
+        ],
+        halal: [
+          "Grilled halal chicken breast, sweet potato, greens",
+          "Beef kebab with bulgur & salad",
+          "Yogurt-marinated chicken with roasted veg"
+        ],
+        keto: [
+          "Omelette with cheese, avocado and bacon",
+          "Grilled salmon with asparagus and butter",
+          "Cobb salad (eggs, avocado, chicken, cheese)"
+        ]
+      };
+      const pool = meals[ diet in meals ? diet : 'any' ];
+      const chosen = [];
+      for(let i=0;i<days;i++){
+        chosen.push(`${i+1}. ${pool[i % pool.length]}`);
+      }
+      return `Meal Suggestions (${diet}) — approx target ${kcal} kcal/day\n\n${chosen.join('\n')}\n\nTips:\n• Prioritize protein in every meal (~${Math.round(protein/3)}g per main meal).\n• Swap carbs for veggies if you're closer to a deficit.`;
+    }
+
+    // Weekly workout generator (simple, short)
+    function generateWeeklyWorkout(p){
+      const availabilityNote = (p.activity <= 1.375) ? 'You appear lightly active — 3x week strength + 2x light cardio is good.' : 'You have good activity — 4x strength + 1–2 cardio sessions fits well.';
+      return `Weekly Workout (sample)\n\nMon — Full body strength (squats, bench/press, rows) 3 sets x 8-12\nTue — 20–30 min moderate cardio or brisk walk\nWed — Upper body focus (presses, pull exercises) 3 sets x 8-12\nThu — Active recovery / mobility\nFri — Lower body + conditioning (deadlift/hinge, lunges)\nSat — Optional HIIT or sport\nSun — Rest / light mobility\n\n${availabilityNote}\n• Warm up 5–10m before lifting.\n• Finish with 5–10m stretching or mobility.`;
+    }
+
+    // UI send flow
+    sendMsgBtn.addEventListener('click', ()=>{
+      const q = userMsgInput.value.trim();
+      if(!q) return;
+      appendUserMessage(q);
+      userMsgInput.value = '';
+      setTimeout(()=>{ handleAssistantQuery(q); scrollMessages(); }, 450); // slight simulated thinking
+      scrollMessages();
+    });
+    userMsgInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ sendMsgBtn.click(); } });
+
+    // preset chips in suggestions
+    document.querySelectorAll('[data-preset]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const preset = btn.dataset.preset;
+        if(preset === 'plan_gain'){
+          appendUserMessage('Create 4-week muscle-building plan');
+          setTimeout(()=>{ handleAssistantQuery('create 4-week plan for muscle gain'); scrollMessages(); }, 300);
+        } else if(preset === 'meals_keto'){
+          appendUserMessage('7-day keto meals');
+          setTimeout(()=>{ handleAssistantQuery('7 day keto meals'); scrollMessages(); }, 300);
+        } else if(preset === 'schedule_short'){
+          appendUserMessage('Daily 20-minute home workouts');
+          setTimeout(()=>{ handleAssistantQuery('daily 20 minute home workouts'); scrollMessages(); }, 300);
+        }
+      });
+    });
+
+    // quick chips for UX (non-critical)
+    document.querySelectorAll('.chip[data-tip]').forEach(c=>{
+      c.addEventListener('click', ()=>{ appendAiMessage(c.dataset.tip || 'Tip'); scrollMessages(); });
+    });
+
+    // on load animate a friendly greeting if profile exists
+    window.addEventListener('load', ()=>{
+      const exists = localStorage.getItem('fitnessProfile');
+      if(exists){
+        setTimeout(()=>{ appendAiMessage('Welcome back! Ask me to update your plan or generate new meals.'); scrollMessages(); }, 900);
+      }
+    });
+
+    // accessibility: small keyboard focus
+    userMsgInput.setAttribute('aria-label','Ask FitBuddy');
+	
+	new QRCode(document.getElementById("qrcode"), {
+    text: "Health and Wellbeing.html",  // CHANGE THIS TO YOUR MAIN WEBPAGE URL!!
+    width: 150,
+    height: 150,
+  });
+  </script>
+</body>
+</html>
