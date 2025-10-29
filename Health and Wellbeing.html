@@ -121,14 +121,6 @@
     text-decoration: underline;
     opacity: 0.8;
   }
-  
-  #qrcode {
-  margin: 20px auto;
-  padding: 10px;
-  background: #ffffff33;
-  border-radius: 10px;
-  width: fit-content;
-} 
   </style>
 </head>
 <body>
@@ -298,11 +290,6 @@
   <p>
   <a class="schedule-link" href="Health and Wellbeingg.html">View Your Full Schedule →</a>
 </p>
-
-<h3>Scan to open FitBuddy Main Page:</h3>
-<div id="qrcode"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
   <script>
     const profileForm = document.getElementById('profileForm');
     const clearProfileBtn = document.getElementById('clearProfile');
@@ -457,9 +444,6 @@
     // Load existing on start
     loadProfileIfExists();
 
-    /* ----------------------
-       Simple rule-based assistant engine (client-side)
-       ---------------------- */
     function appendUserMessage(text){
       const el = document.createElement('div');
       el.className = 'msg user';
@@ -619,12 +603,7 @@
 
     // accessibility: small keyboard focus
     userMsgInput.setAttribute('aria-label','Ask FitBuddy');
-	
-	new QRCode(document.getElementById("qrcode"), {
-    text: "Health and Wellbeing.html",  // CHANGE THIS TO YOUR MAIN WEBPAGE URL!!
-    width: 150,
-    height: 150,
-  });
   </script>
 </body>
 </html>
+
